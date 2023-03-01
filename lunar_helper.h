@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -208,10 +210,4 @@ void run_test_lua(){
 }
 
 
-int main() {
-    //test_table();
-    //test_is_number();
-    //run_test_lua();
-    
 
-}
