@@ -7,6 +7,9 @@
 #include "lua/lua.hpp"
 #include <sstream>
 
+const int get_lua = 0;
+const int set_lua = 1;
+
 bool isNumber(const std::string& str) {
     std::istringstream iss(str);
     double num;
@@ -20,6 +23,19 @@ float stringToFloat(const std::string& str) {
     iss >> result;
     return result;
 }
+
+
+std::string floatToString(float value) {
+    std::stringstream ss;
+    ss << value;
+    return ss.str();
+}
+
+
+
+
+
+
 
 class Table {
 public:
@@ -106,6 +122,68 @@ void lua_pushtable(lua_State* L, Table t){
     
 }
 
+
+
+Table lua_totable(lua_State* L,int index){
+    Table t;
+    // Make sure the argument at tableIndex is a table
+    luaL_checktype(L, index, LUA_TTABLE);
+
+    // Iterate over the table and extract its keys and values
+    lua_pushnil(L);  // Push the first key
+    while (lua_next(L, index) != 0) {
+        std::string key;
+		
+        // At this point, the stack contains the key at index -2 and the value at index -1
+        
+       
+		 if (lua_type(L, -2) == LUA_TNUMBER) {
+            // The value is a number
+            float value = lua_tonumber(L, -2);
+			key = floatToString(value);
+            
+        }
+		else if (lua_type(L, -2) == LUA_TSTRING) {
+            // The value is a number
+            std::string value = lua_tostring(L, -2);
+			key = value;
+            
+        }
+        else if (lua_type(L, -2) == LUA_TBOOLEAN) {
+            // The value is a number
+            float value = lua_toboolean(L, -2);
+            key = std::to_string(value);
+        }
+		
+        
+		if (lua_type(L, -1) == LUA_TNUMBER) {
+            // The value is a number
+            float value = lua_tonumber(L, -1);
+			t.setFloat(key,value);
+            
+        }
+        else if (lua_type(L, -1) == LUA_TSTRING) {
+            // The value is a number
+            std::string value = lua_tostring(L, -1);
+			t.setString(key,value);
+            
+        }
+        else if (lua_type(L, -1) == LUA_TBOOLEAN) {
+            // The value is a number
+            float value = lua_toboolean(L, -1);
+            t.setFloat(key,value);
+        }
+        else if (lua_type(L, -1) == LUA_TTABLE) {
+            // The value is a table, recurse into it
+            t.setTable(key,lua_totable(L, lua_gettop(L)));
+        }
+
+        // Pop the value, but leave the key for the next iteration
+        lua_pop(L, 1);
+    }
+    return t;
+}
+
 int get_c_table(lua_State* L) {
 
 
@@ -129,58 +207,7 @@ int get_c_table(lua_State* L) {
     return 1;
 }
 
-Table lua_totable(lua_State* L,int index){
-    Table t;
-    // Make sure the argument at tableIndex is a table
-    luaL_checktype(L, index, LUA_TTABLE);
 
-    // Iterate over the table and extract its keys and values
-    lua_pushnil(L);  // Push the first key
-    while (lua_next(L, index) != 0) {
-        std::string key;
-
-        // At this point, the stack contains the key at index -2 and the value at index -1
-        if (lua_isnumber(L, -2)) {
-            // The value is a number
-            float value = lua_tonumber(L, -2);
-            key = std::to_string(value);
-        }
-        else if (lua_isstring(L, -2)) {
-            // The value is a number
-            std::string value = lua_tostring(L, -2);
-            key = value;
-        }
-        else if (lua_isboolean(L, -2)) {
-            // The value is a number
-            float value = lua_toboolean(L, -2);
-            key = std::to_string(value);
-        }
-
-        if (lua_isnumber(L, -1)) {
-            // The value is a number
-            float value = lua_tonumber(L, -1);
-            t.setFloat(key,value);
-        }
-        else if (lua_isstring(L, -1)) {
-            // The value is a number
-            std::string value = lua_tostring(L, -1);
-            t.setString(key,value);
-        }
-        else if (lua_isboolean(L, -1)) {
-            // The value is a number
-            float value = lua_toboolean(L, -1);
-            t.setFloat(key,value);
-        }
-        else if (lua_istable(L, -1)) {
-            // The value is a table, recurse into it
-            t.setTable(key,lua_totable(L, lua_gettop(L)));
-        }
-
-        // Pop the value, but leave the key for the next iteration
-        lua_pop(L, 1);
-    }
-    return t;
-}
 
 
 
